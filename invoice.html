@@ -1,0 +1,645 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bolt Ride Invoice Generator</title>
+    <style>
+      body {
+        font-family: "Segoe UI", Arial, sans-serif;
+        background: #f5f6f7;
+        margin: 0;
+        padding: 20px;
+        display: flex;
+        gap: 20px;
+      }
+
+      .form-container,
+      .invoice-container {
+        background: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        flex: 1;
+      }
+
+      h2 {
+        margin-top: 0;
+      }
+
+      .form-container label {
+        display: block;
+        margin-top: 10px;
+        font-weight: bold;
+        font-size: 14px;
+      }
+
+      .form-container input {
+        width: 100%;
+        padding: 8px;
+        margin-top: 4px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+
+      .btn {
+        margin-top: 15px;
+        padding: 10px 15px;
+        background: #34d186;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+
+      .btn:hover {
+        background: #28b173;
+      }
+
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .logo img {
+        height: 70px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+      }
+
+      table th,
+      table td {
+        border: 1px solid #000000;
+        padding: 6px;
+        text-align: right;
+        font-size: 14px;
+      }
+
+      table th {
+        background-color: #f0fdf6;
+        text-align: center;
+      }
+
+      table td:first-child {
+        text-align: left;
+      }
+
+      .users-table td:last-child {
+        font-weight: bold;
+      }
+
+      .invoice-details {
+        text-align: right;
+      }
+
+      .charged-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+      }
+
+      .charged-table td {
+        border: none;
+        padding: 4px 2px;
+        font-size: 14px;
+        font-weight: 400;
+      }
+
+      .charged-table tr td:first-child {
+        text-align: right;
+        padding-right: 8px;
+        color: #333;
+        width: 79%;
+      }
+
+      .charged-table tr td:last-child {
+        text-align: right;
+        width: 21%;
+        white-space: nowrap;
+      }
+
+      .charged-table tr:last-child {
+        height: 70px;
+      }
+
+      .charged-table img {
+        height: 18px;
+        width: 24px;
+        vertical-align: top;
+        margin-right: 3px;
+      }
+
+      .total-row td {
+        font-weight: 700;
+      }
+
+      .person-details {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: end;
+      }
+
+      .start {
+        margin-bottom: 30px;
+      }
+
+      @media print {
+        body {
+          background: none;
+          padding: 0;
+        }
+        .form-container {
+          display: none;
+        }
+        .invoice-container {
+          box-shadow: none;
+          border: none;
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Input Form -->
+    <div class="form-container">
+      <h2>Invoice Form</h2>
+
+      <label>Invoice No:</label>
+      <input type="text" id="invoiceNo" />
+
+      <label>Date:</label>
+      <input type="date" id="date" />
+
+      <label>Recipient:</label>
+      <input type="text" id="recipient" value="Idris Balogun" />
+
+      <label>Start Location:</label>
+      <input type="text" id="start" value="3B Ruxton Street, Lagos" />
+
+      <label>Trip Fee:</label>
+      <input type="number" id="tripFee" value="2600.00" />
+
+      <button class="btn" onclick="generateInvoice()">Generate Invoice</button>
+      <button class="btn" onclick="window.print()">Print Invoice</button>
+    </div>
+
+    <!-- Invoice Preview -->
+    <div class="invoice-container" id="invoice">
+      <div class="header">
+        <div class="logo"><img src="Bolt_logo.png" alt="bolt logo" /></div>
+        <div class="invoice-details">
+          <p>
+            <strong>Invoice no: <span id="previewInvoiceNo"></span></strong>
+          </p>
+          <p>Date: <span id="previewDate"></span></p>
+        </div>
+      </div>
+
+      <div class="person-details">
+        <div>
+          <p>Recipient:</p>
+          <p><strong id="previewRecipient"></strong></p>
+        </div>
+        <p><strong id="previewDriverName"></strong></p>
+      </div>
+      <p class="start">Start: <span id="previewStart"></span></p>
+
+      <table class="users-table">
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>Sum (NGN)</th>
+            <th>VAT 0%</th>
+            <th>Total sum (NGN)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Trip Fee</td>
+            <td id="previewTripFee"></td>
+            <td>0.00</td>
+            <td id="previewTripFeeTotal"></td>
+          </tr>
+          <tr>
+            <td>Lagos State Road Development Fund Levy</td>
+            <td id="previewLevy"></td>
+            <td>0.00</td>
+            <td id="previewLevyTotal"></td>
+          </tr>
+          <tr>
+            <td>Booking Fee</td>
+            <td id="previewBookingFee"></td>
+            <td>0.00</td>
+            <td id="previewBookingFeeTotal"></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <table class="charged-table">
+        <tbody>
+          <tr>
+            <td>Total (NGN):</td>
+            <td><span id="previewTotal"></span></td>
+          </tr>
+          <tr>
+            <td>VAT 0%:</td>
+            <td>0.00</td>
+          </tr>
+          <tr class="total-row">
+            <td>Total including VAT (NGN):</td>
+            <td><span id="previewTotalIncludingVAT"></span></td>
+          </tr>
+          <tr class="total-row">
+            <td>Charged <img src="icon-money.webp" alt="cash icon" /> cash:</td>
+            <td><span id="previewTotalCash"></span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <script>
+      function generateNigerianFullName() {
+        const firstNames = [
+          "Idris",
+          "Chinedu",
+          "Aisha",
+          "Emeka",
+          "Bolanle",
+          "Ibrahim",
+          "Oluwaseun",
+          "Ngozi",
+          "Yakubu",
+          "Funke",
+          "Abdulrahman",
+          "Tope",
+          "Efe",
+          "Chika",
+          "Gbenga",
+          "Fatima",
+          "Abdullahi",
+          "Adewale",
+          "Tunde",
+          "Yemi",
+          "Kemi",
+          "Seyi",
+          "Damilola",
+          "Temitope",
+          "Olamide",
+          "Femi",
+          "Segun",
+          "Kunle",
+          "Wale",
+          "Dele",
+          "Bisi",
+          "Bisola",
+          "Folake",
+          "Yetunde",
+          "Modupe",
+          "Bukola",
+          "Shade",
+          "Funmilayo",
+          "Titilayo",
+          "Ronke",
+          "Toyin",
+          "Nike",
+          "Morenike",
+          "Ayomide",
+          "Adebayo",
+          "Adeola",
+          "Adedayo",
+          "Ademola",
+          "Adekunle",
+          "Adetola",
+          "Opeyemi",
+          "Oluwatobi",
+          "Oluwadamilare",
+          "Oluwafemi",
+          "Oluwatimilehin",
+          "Oluwatosin",
+          "Oluwaseyi",
+          "Oluwafunmilayo",
+          "Oluwajomiloju",
+          "Chisom",
+          "Chiamaka",
+          "Chinonso",
+          "Chinwe",
+          "Chidinma",
+          "Chiamanda",
+          "Chibuzo",
+          "Chukwudi",
+          "Chukwuemeka",
+          "Ifeanyi",
+          "Ikenna",
+          "Obinna",
+          "Nnamdi",
+          "Uche",
+          "Uchenna",
+          "Kelechi",
+          "Kosisochukwu",
+          "Somtochukwu",
+          "Adaeze",
+          "Adanna",
+          "Amaka",
+          "Nneka",
+          "Ngozi",
+          "Ifeoma",
+          "Ogechi",
+          "Precious",
+          "Esther",
+          "Deborah",
+          "Grace",
+          "Mercy",
+          "Joy",
+          "Peace",
+          "Faith",
+          "Victoria",
+          "Blessing",
+          "Jennifer",
+          "Stephanie",
+          "Daniel",
+          "David",
+          "Samuel",
+          "Michael",
+          "Joseph",
+          "Joshua",
+          "Benjamin",
+          "Nathaniel",
+          "Stephen",
+          "Caleb",
+          "Moses",
+          "Isaac",
+          "Abdulaziz",
+          "Abubakar",
+          "Musa",
+          "Sani",
+          "Usman",
+          "Umar",
+          "Hassan",
+          "Hussain",
+          "Yusuf",
+          "Salihu",
+          "Maryam",
+          "Zainab",
+          "Hauwa",
+          "Hadiza",
+          "Khadija",
+          "Mariam",
+          "Safiya",
+          "Halima",
+          "Rukayat",
+          "Aminat",
+          "Asisat",
+        ];
+
+        const lastNames = [
+          "Balogun",
+          "Okonkwo",
+          "Adewale",
+          "Eze",
+          "Ibrahim",
+          "Olawale",
+          "Okafor",
+          "Ahmed",
+          "Ogunleye",
+          "Nwosu",
+          "Adamu",
+          "Obi",
+          "Afolayan",
+          "Yakubu",
+          "Ojo",
+          "Okwuosa",
+          "Adebayo",
+          "Adeyemi",
+          "Adeniyi",
+          "Akinyemi",
+          "Akintola",
+          "Akinwale",
+          "Akinola",
+          "Akinsanya",
+          "Alabi",
+          "Alao",
+          "Ariyo",
+          "Bello",
+          "Bamgbose",
+          "Babatunde",
+          "Bankole",
+          "Bakare",
+          "Bamidele",
+          "Babalola",
+          "Dada",
+          "Daramola",
+          "Fashola",
+          "Folarin",
+          "Fashina",
+          "Ige",
+          "Ilesanmi",
+          "Ishola",
+          "Jimoh",
+          "Kadiri",
+          "Lawal",
+          "Mustapha",
+          "Musa",
+          "Mohammed",
+          "Ogunbiyi",
+          "Ogunlana",
+          "Ogundele",
+          "Ogundipe",
+          "Ogunyemi",
+          "Ogunjobi",
+          "Ojo",
+          "Okunade",
+          "Oladipo",
+          "Oladokun",
+          "Olagunju",
+          "Olanrewaju",
+          "Olawuyi",
+          "Olowo",
+          "Olumide",
+          "Oluwole",
+          "Oni",
+          "Onabiyi",
+          "Oniyide",
+          "Oyekan",
+          "Oyediran",
+          "Oyewole",
+          "Oyedele",
+          "Oyelami",
+          "Oyetunde",
+          "Salami",
+          "Shittu",
+          "Soyinka",
+          "Taiwo",
+          "Akinpelu",
+          "Adekunle",
+          "Adesanya",
+          "Adesina",
+          "Adepoju",
+          "Adegbite",
+          "Adegoke",
+          "Adegbola",
+          "Adewusi",
+          "Ajayi",
+          "Ajibade",
+          "Ajibola",
+          "Akinbiyi",
+          "Akinlabi",
+          "Akinyode",
+          "Arowolo",
+          "Awolowo",
+          "Babalola",
+          "Bamidele",
+          "Oduyemi",
+          "Ogunmola",
+          "Olatunji",
+          "Olaniyan",
+          "Olanipekun",
+          "Olowe",
+          "Omotosho",
+          "Omoregie",
+          "Osagie",
+          "Oseni",
+          "Eze",
+          "Ezeh",
+          "Ezeani",
+          "Ezeoke",
+          "Ezenwa",
+          "Ezeigbo",
+          "Ibekwe",
+          "Ibe",
+          "Iroha",
+          "Iwu",
+          "Iwuoha",
+          "Nnamani",
+          "Nwankwo",
+          "Nwachukwu",
+          "Nwafor",
+          "Nwankwo",
+          "Okeke",
+          "Okoro",
+          "Okorie",
+          "Onuoha",
+          "Umeh",
+          "Ugwu",
+          "Udeh",
+          "Udo",
+          "Uzoma",
+          "Chukwu",
+          "Chukwuma",
+          "Chukwudi",
+          "Obasi",
+          "Okechukwu",
+          "Ojukwu",
+          "Onyeka",
+          "Ezeonu",
+          "Adigwe",
+          "Opara",
+          "Iroegbu",
+          "Madu",
+          "Abubakar",
+          "Abdullahi",
+          "Bello",
+          "Garba",
+          "Gidado",
+          "Haruna",
+          "Hassan",
+          "Hussaini",
+          "Kabir",
+          "Lawal",
+          "Maitama",
+          "Mamman",
+          "Sani",
+          "Shehu",
+          "Suleiman",
+          "Umar",
+          "Usman",
+          "Yusuf",
+          "Zubairu",
+          "Danladi",
+          "Danjuma",
+          "Gambo",
+          "Iliyasu",
+          "Jibril",
+          "Salihu",
+          "Tanko",
+          "Yahaya",
+        ];
+        const firstName =
+          firstNames[Math.floor(Math.random() * firstNames.length)];
+        const lastName =
+          lastNames[Math.floor(Math.random() * lastNames.length)];
+        return `${lastName} ${firstName}`;
+      }
+
+      function generateInvoiceNo() {
+        const part1 = Math.floor(10000000 + Math.random() * 90000000);
+        const part2 = "NG";
+        const part3 = Math.floor(1000 + Math.random() * 9000);
+        const part4 = Math.floor(1000 + Math.random() * 9000);
+        return `${part1}-${part2}${part3}-${part4}`;
+      }
+
+      function generateInvoice() {
+        const invoiceNo = document.getElementById("invoiceNo").value;
+        const date = document.getElementById("date").value;
+        const recipient = document.getElementById("recipient").value;
+        const start = document.getElementById("start").value;
+        const enteredTripFee =
+          parseFloat(document.getElementById("tripFee").value) || 0;
+
+        // Fixed Levy
+        const levy = 30.0;
+
+        // Booking Fee = 6% of entered Trip Fee
+        const bookingFee = (enteredTripFee * 0.06).toFixed(2);
+
+        // Trip Fee after deductions
+        const tripAfterDeductions = (
+          enteredTripFee -
+          levy -
+          bookingFee
+        ).toFixed(2);
+        const total = enteredTripFee.toFixed(2);
+
+        // Update invoice preview
+        document.getElementById("previewInvoiceNo").textContent = invoiceNo;
+        document.getElementById("previewDate").textContent = date;
+        document.getElementById("previewRecipient").textContent = recipient;
+        document.getElementById("previewStart").textContent = start;
+
+        document.getElementById("previewTripFee").textContent =
+          tripAfterDeductions;
+        document.getElementById("previewTripFeeTotal").textContent =
+          tripAfterDeductions;
+
+        document.getElementById("previewLevy").textContent = levy.toFixed(2);
+        document.getElementById("previewLevyTotal").textContent =
+          levy.toFixed(2);
+
+        document.getElementById("previewBookingFee").textContent = bookingFee;
+        document.getElementById("previewBookingFeeTotal").textContent =
+          bookingFee;
+
+        document.getElementById("previewTotal").textContent = total;
+        document.getElementById("previewTotalIncludingVAT").textContent = total;
+        document.getElementById("previewTotalCash").textContent = total;
+
+        document.getElementById("previewDriverName").textContent =
+          generateNigerianFullName();
+      }
+
+      window.onload = () => {
+        document.getElementById("invoiceNo").value = generateInvoiceNo();
+        document.getElementById("date").value = new Date()
+          .toISOString()
+          .split("T")[0];
+        generateInvoice();
+      };
+    </script>
+  </body>
+</html>
